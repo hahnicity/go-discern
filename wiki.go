@@ -1,8 +1,7 @@
-package wiki
+package discern
 
 import (
     "encoding/json"
-    "github.com/hahnicity/go-discern"
     "github.com/hahnicity/go-discern/config"
     "github.com/hahnicity/go-stringit"
     "io/ioutil"
@@ -17,22 +16,30 @@ type WikiResponse struct {
     Title       string
 }
 
-func composeStats(views chan map[string]int) map[string]int {
+type WikiRequest struct {
+    monthly  chan map[string]int
+    yearly   chan map[string]int
+    symbol   string
+    page     string
+    year     string
+}
+
+func (w *WikiRequest) composeStats() map[string]int {
     var monthsReceived int = 0
     aggregateViews := make(map[string]int)
-    for received := range views {
+    for received := range w.monthly {
         monthsReceived += 1
-        discern.JoinViewsMaps(aggregateViews, received)
+        JoinViewsMaps(aggregateViews, received)
         if monthsReceived == config.NumberMonths {
-            close(views)
+            close(w.monthly)
         }
     }
     return aggregateViews
 }
 
-func getMonthlyStats(date string, page string, views chan map[string]int) {
+func (w *WikiRequest) getMonthlyStats(date string) {
     wikiResp := new(WikiResponse)
-    resp, err := http.Get(stringit.Format("{}/{}/{}", config.WikiUrl, date, page))
+    resp, err := http.Get(stringit.Format("{}/{}/{}", config.WikiUrl, date, w.page))
     if err != nil {
         panic(err)    
     }
@@ -42,19 +49,18 @@ func getMonthlyStats(date string, page string, views chan map[string]int) {
     if err != nil {
         panic(err)    
     }
-    views <- wikiResp.Daily_views
+    w.monthly <- wikiResp.Daily_views
 }
 
-func GetYearlyStats(year string, page string) map[string]int {
-    views := make(chan map[string]int)
+func (w *WikiRequest) GetYearlyStats() {
     for i := 1; i < 1 + config.NumberMonths; i++ { 
-        date := stringit.Format("{}{}", year, numToString(i))
-        go getMonthlyStats(date, page, views)
+        date := stringit.Format("{}{}", w.year, toMonthStr(i))
+        go w.getMonthlyStats(date)
     }
-    return composeStats(views)
+    w.yearly <- w.composeStats()
 }
 
-func numToString(number int) string {
+func toMonthStr(number int) string {
     if number < 10 {
         return stringit.Format("0{}", number)    
     } else {

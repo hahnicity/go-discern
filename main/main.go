@@ -1,11 +1,13 @@
 package main
 
-import (
-    "fmt"
-    "github.com/hahnicity/go-discern/wiki"
-)
+import "github.com/hahnicity/go-discern/data"
+
+
+// Make argument parser
 
 
 func main() {
-    fmt.Println(wiki.GetYearlyStats("2012", "Apple_inc"))
+    for symbol, page := range data.SP500 {
+        HandleWikiCompany(page)
+    }
 }
