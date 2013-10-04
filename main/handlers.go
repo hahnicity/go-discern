@@ -1,6 +1,9 @@
 package main
-
-import "github.com/hahnicity/go-discern"
+/*
+import (
+    "fmt"
+    "github.com/hahnicity/go-discern"
+)
 
 type Worker struct {
     requests chan *discern.WikiRequest
@@ -15,12 +18,16 @@ func (w *Worker) handleRequest(done chan *Worker) {
     }    
 }
 
-func requester(work chan<- discern.WikiRequest) {
-    c := make(chan int)
+func Requester(year string, companies map[string]string) { //, work chan<- discern.WikiRequest) {
+    c := make(chan map[string]int)
+    for symbol, page := range companies {
+        req := discern.WikiRequest{Symbol: symbol, Page: page, Year: year}
+        go req.GetYearlyStats(c)
+    }
     for {
-        work <- discern.WikiRequest{workFn, c}
-        result := <-c                        
-    }    
+        result := <- c
+        fmt.Println(result)
+    }
 }
 
 type Pool []*Worker
@@ -66,3 +73,4 @@ func (b *Balancer) completed(w *Worker) {
     // Put it into its place on the heap.
     heap.Push(&b.pool, w)
 }
+*/

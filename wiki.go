@@ -8,7 +8,7 @@ import (
     "net/http"
 )
 
-type WikiResponse struct {
+type MonthlyStats struct {
     Daily_views map[string]int
     Project     string
     Month       string
@@ -17,47 +17,52 @@ type WikiResponse struct {
 }
 
 type WikiRequest struct {
-    monthly  chan map[string]int
-    yearly   chan map[string]int
-    symbol   string
-    page     string
-    year     string
+    Resp   chan *WikiResponse
+    Symbol string
+    Page   string
+    Year   string
 }
 
-func (w *WikiRequest) composeStats() map[string]int {
+type WikiResponse struct {
+    Symbol string
+    Yearly map[string]int
+}
+
+func (w *WikiRequest) composeStats(monthly chan map[string]int) map[string]int {
     var monthsReceived int = 0
     aggregateViews := make(map[string]int)
-    for received := range w.monthly {
+    for received := range monthly {
         monthsReceived += 1
         JoinViewsMaps(aggregateViews, received)
         if monthsReceived == config.NumberMonths {
-            close(w.monthly)
+            close(monthly)
         }
     }
     return aggregateViews
 }
 
-func (w *WikiRequest) getMonthlyStats(date string) {
-    wikiResp := new(WikiResponse)
-    resp, err := http.Get(stringit.Format("{}/{}/{}", config.WikiUrl, date, w.page))
+func (w *WikiRequest) getMonthlyStats(date string, monthly chan map[string]int) {
+    monthlyStats := new(MonthlyStats)
+    resp, err := http.Get(stringit.Format("{}/{}/{}", config.WikiUrl, date, w.Page))
     if err != nil {
         panic(err)    
     }
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
-    err = json.Unmarshal(body, wikiResp)
+    err = json.Unmarshal(body, monthlyStats)
     if err != nil {
         panic(err)    
     }
-    w.monthly <- wikiResp.Daily_views
+    monthly <- monthlyStats.Daily_views
 }
 
 func (w *WikiRequest) GetYearlyStats() {
+    monthly := make(chan map[string]int)
     for i := 1; i < 1 + config.NumberMonths; i++ { 
-        date := stringit.Format("{}{}", w.year, toMonthStr(i))
-        go w.getMonthlyStats(date)
+        date := stringit.Format("{}{}", w.Year, toMonthStr(i))
+        go w.getMonthlyStats(date, monthly)
     }
-    w.yearly <- w.composeStats()
+    w.Resp <- &WikiResponse{w.Symbol, w.composeStats(monthly)}
 }
 
 func toMonthStr(number int) string {
