@@ -17,6 +17,7 @@ type MonthlyStats struct {
 }
 
 type WikiRequest struct {
+    Client *http.Client
     Resp   chan *WikiResponse
     Symbol string
     Page   string
@@ -43,7 +44,9 @@ func (w *WikiRequest) composeStats(monthly chan map[string]int) map[string]int {
 
 func (w *WikiRequest) getMonthlyStats(date string, monthly chan map[string]int) {
     monthlyStats := new(MonthlyStats)
-    resp, err := http.Get(stringit.Format("{}/{}/{}", config.WikiUrl, date, w.Page))
+    req, _ := http.NewRequest("GET", stringit.Format("{}/{}/{}", config.WikiUrl, date, w.Page), nil)
+    req.Close = true
+    resp, err := w.Client.Do(req)
     if err != nil {
         panic(err)    
     }
@@ -56,13 +59,13 @@ func (w *WikiRequest) getMonthlyStats(date string, monthly chan map[string]int) 
     monthly <- monthlyStats.Daily_views
 }
 
-func (w *WikiRequest) GetYearlyStats() {
+func (w *WikiRequest) GetYearlyStats() *WikiResponse {
     monthly := make(chan map[string]int)
     for i := 1; i < 1 + config.NumberMonths; i++ { 
         date := stringit.Format("{}{}", w.Year, toMonthStr(i))
         go w.getMonthlyStats(date, monthly)
     }
-    w.Resp <- &WikiResponse{w.Symbol, w.composeStats(monthly)}
+    return &WikiResponse{w.Symbol, w.composeStats(monthly)}
 }
 
 func toMonthStr(number int) string {
