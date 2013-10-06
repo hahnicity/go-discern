@@ -1,7 +1,8 @@
+// The ideas in this code and the load balancer are taken from
+// http://concur.rspace.googlecode.com/hg/talk/concur.html#slide-51
 package discern
 
 import "container/heap"
-import "fmt"
 
 
 type Worker struct {
@@ -9,9 +10,11 @@ type Worker struct {
     index    int
 }
 
-func (w *Worker) work() {
+func (w *Worker) work(done chan *Worker) {
     req := <- w.requests
     req.Resp <- req.GetYearlyStats()
+    done <- w
+    return
 }
 
 type Pool []*Worker
@@ -43,28 +46,43 @@ func (p *Pool) Pop() interface{} {
 
 type Balancer struct {
     pool *Pool    
+    done chan *Worker
 }
 
 func (b *Balancer) Balance(work chan WikiRequest) {
     for {
-        req := <-work // received a Request...
-        b.dispatch(req) // ...so send it to a Worker
-    }    
+        select {
+        case req := <-work: // received a Request...
+            b.dispatch(req) // ...so send it to a Worker
+        case w := <- b.done:
+            b.completed(w)
+        }
+    }       
 }
 
+// Job is complete; update heap
+func (b *Balancer) completed(w *Worker) {
+    // Remove it from heap.                  
+    heap.Remove(b.pool, w.index)
+    // Put it into its place on the heap.
+    heap.Push(b.pool, w)
+}
+
+// Pull a worker off the heap, and send it to work
 func (b *Balancer) dispatch(req WikiRequest) {
     w := heap.Pop(b.pool).(*Worker)
-    fmt.Println("USING WORKER", w.index)
-    go w.work() // tell the task to get to work
+    go w.work(b.done) // tell the task to get to work
     w.requests <- req  // send it to the task
 }
 
+// Constructor method for the Load Balancer
 func MakeBalancer(n int) *Balancer {
-    b := &Balancer{makePool(n)}
+    b := &Balancer{makePool(n), make(chan *Worker)}
     heap.Init(b.pool) //initialize the pool
     return b
 }
 
+// Make the pool of workers
 func makePool(n int) *Pool {
     p := new(Pool)
     for i := 0; i < n; i++ {
