@@ -10,10 +10,8 @@ type Worker struct {
 }
 
 func (w *Worker) work() {
-    go func() {
-        req := <- w.requests
-        req.Resp <- req.GetYearlyStats()
-    }()
+    req := <- w.requests
+    req.Resp <- req.GetYearlyStats()
 }
 
 type Pool []*Worker
@@ -57,9 +55,8 @@ func (b *Balancer) Balance(work chan WikiRequest) {
 func (b *Balancer) dispatch(req WikiRequest) {
     w := heap.Pop(b.pool).(*Worker)
     fmt.Println("USING WORKER", w.index)
-    // ...send it the task.
-    w.work()
-    w.requests <- req
+    go w.work() // tell the task to get to work
+    w.requests <- req  // send it to the task
 }
 
 func MakeBalancer(n int) *Balancer {

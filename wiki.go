@@ -43,20 +43,22 @@ func (w *WikiRequest) composeStats(monthly chan map[string]int) map[string]int {
 }
 
 func (w *WikiRequest) getMonthlyStats(date string, monthly chan map[string]int) {
-    monthlyStats := new(MonthlyStats)
-    req, _ := http.NewRequest("GET", stringit.Format("{}/{}/{}", config.WikiUrl, date, w.Page), nil)
-    req.Close = true
-    resp, err := w.Client.Do(req)
+    resp, err := http.Get(stringit.Format("{}/{}/{}", config.WikiUrl, date, w.Page))
     if err != nil {
         panic(err)    
     }
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        panic(err)    
+    }
+    monthlyStats := new(MonthlyStats)
     err = json.Unmarshal(body, monthlyStats)
     if err != nil {
         panic(err)    
     }
     monthly <- monthlyStats.Daily_views
+    return  // tell the goroutine to close
 }
 
 func (w *WikiRequest) GetYearlyStats() *WikiResponse {
@@ -74,4 +76,11 @@ func toMonthStr(number int) string {
     } else {
         return stringit.Format("{}", number)    
     }
+}
+
+func makeWikiRequest(year, page, symbol string) WikiRequest{
+    wikiResp := make(chan *WikiResponse)
+    tr := &http.Transport{DisableKeepAlives: true}
+    c := &http.Client{Transport: tr}
+    return WikiRequest{c, wikiResp, symbol, page, year}
 }

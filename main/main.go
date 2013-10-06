@@ -11,5 +11,5 @@ func main() {
     work := make(chan discern.WikiRequest)
     b := discern.MakeBalancer(600)
     go b.Balance(work)
-    discern.Requester("2012", data.SP500, 10, work)
+    discern.Requester("2012", data.SP500, 0, work)
 }
