@@ -45,7 +45,7 @@ func (p *Pool) Pop() interface{} {
 }
 
 type Balancer struct {
-    pool *Pool    
+    Pool *Pool    
     done chan *Worker
 }
 
@@ -62,15 +62,13 @@ func (b *Balancer) Balance(work chan WikiRequest) {
 
 // Job is complete; update heap
 func (b *Balancer) completed(w *Worker) {
-    // Remove it from heap.                  
-    heap.Remove(b.pool, w.index)
     // Put it into its place on the heap.
-    heap.Push(b.pool, w)
+    heap.Push(b.Pool, w)
 }
 
 // Pull a worker off the heap, and send it to work
 func (b *Balancer) dispatch(req WikiRequest) {
-    w := heap.Pop(b.pool).(*Worker)
+    w := heap.Pop(b.Pool).(*Worker)
     go w.work(b.done) // tell the task to get to work
     w.requests <- req  // send it to the task
 }
@@ -78,7 +76,7 @@ func (b *Balancer) dispatch(req WikiRequest) {
 // Constructor method for the Load Balancer
 func MakeBalancer(n int) *Balancer {
     b := &Balancer{makePool(n), make(chan *Worker)}
-    heap.Init(b.pool) //initialize the pool
+    heap.Init(b.Pool) //initialize the pool
     return b
 }
 

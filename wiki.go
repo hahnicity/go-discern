@@ -2,6 +2,7 @@ package discern
 
 import (
     "encoding/json"
+    "fmt"
     "github.com/hahnicity/go-discern/config"
     "github.com/hahnicity/go-stringit"
     "io/ioutil"
@@ -35,7 +36,7 @@ func (w *WikiRequest) composeStats(monthly chan map[string]int) map[string]int {
     for received := range monthly {
         monthsReceived += 1
         JoinViewsMaps(aggregateViews, received)
-        if monthsReceived == config.NumberMonths {
+        if monthsReceived >= config.NumberMonths {
             close(monthly)
         }
     }
@@ -62,6 +63,7 @@ func (w *WikiRequest) getMonthlyStats(date string, monthly chan map[string]int) 
 }
 
 func (w *WikiRequest) GetYearlyStats() *WikiResponse {
+    fmt.Println(stringit.Format("Search for wiki stats for {}", w.Symbol))
     monthly := make(chan map[string]int)
     for i := 1; i < 1 + config.NumberMonths; i++ { 
         date := stringit.Format("{}{}", w.Year, toMonthStr(i))

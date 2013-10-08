@@ -38,5 +38,5 @@ func main() {
     parseArgs()
     work := make(chan discern.WikiRequest)
     go discern.MakeBalancer(workers).Balance(work)
-    discern.Requester(year, data.SP500, processes, work)
+    discern.Requester(year, data.SP500, processes - 1, work)
 }
