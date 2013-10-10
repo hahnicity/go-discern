@@ -9,6 +9,7 @@ import (
     "net/http"
 )
 
+
 type MonthlyStats struct {
     Daily_views map[string]int
     Project     string
@@ -80,9 +81,8 @@ func toMonthStr(number int) string {
     }
 }
 
-func makeWikiRequest(year, page, symbol string) WikiRequest{
-    wikiResp := make(chan *WikiResponse)
+func makeWikiRequest(year, page, symbol string, resp chan *WikiResponse) WikiRequest{
     tr := &http.Transport{DisableKeepAlives: true}
     c := &http.Client{Transport: tr}
-    return WikiRequest{c, wikiResp, symbol, page, year}
+    return WikiRequest{c, resp, symbol, page, year}
 }
