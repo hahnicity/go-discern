@@ -1,5 +1,13 @@
 package discern
 
+func FloatsToValues(floats []float64) (values *Values) {
+     values = new(Values)
+     for _, f := range floats {
+        *values = append(*values, int(f))
+    }
+    return
+}
+
 type Values []int
 
 func (v Values) Value(i int) float64 {
