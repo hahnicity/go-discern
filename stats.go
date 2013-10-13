@@ -46,10 +46,10 @@ func FindMeanViews(wr *WikiResponse) (mean int) {
 
 // Find the companies with the highest number of mean views according to a
 // mean view percentile
-func FindHighestMeans(means map[string]int, meanPercentile float64) (ret map[string]int) {
+func FindHighestMeans(means map[string]int, meanPercentile float64) (stats map[string]int) {
     vals := GetValuesFromMap(means)
     result := statistics.QuantileFromSortedData(vals, meanPercentile)
-    means = GetKeysGE(means, result)
+    stats = GetKeysGE(means, result)
     return
 }
 

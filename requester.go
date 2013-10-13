@@ -8,20 +8,35 @@ import (
 
 
 func Requester(conf *config.Config, companies map[string]string, work chan <-WikiRequest) {
-    items := 0
+    activeRequests := 0
     c := make(chan *WikiResponse)
     ar :=  make([]*WikiResponse, 0)
     for symbol, page := range companies {
-        items++
+        activeRequests++
         req := makeWikiRequest(conf.Year, page, symbol, conf.CloseReq, c)
         work <- req
-        if items > conf.Processes { // statsgrok.se is the problem here
-            resp := <- c
-            ar = append(ar, resp)
-            items--
-        }
+        ar = manageActiveProc(&activeRequests, conf.Processes, ar, c)
+    }
+    // Wait for all requests to finish
+    for len(ar) < len(companies) {
+        resp := <- c
+        ar = append(ar, resp)
     }
     Analyze(ar, conf)
+}
+
+// Throttle number of active requests
+// statsgrok.se is the problem here
+func manageActiveProc(activeRequests *int, 
+                      maxRequests int, 
+                      ar []*WikiResponse, 
+                      c chan *WikiResponse) []*WikiResponse {
+    if *activeRequests == maxRequests {
+        resp := <- c
+        ar = append(ar, resp)
+    }
+    *(activeRequests)--
+    return ar
 }
 
 func Analyze(ar []*WikiResponse, conf *config.Config) {
@@ -53,7 +68,7 @@ func analyzeMeans(ar []*WikiResponse, meanPercentile float64) {
     for _, resp := range ar {
         means[resp.Symbol] = FindMeanViews(resp)
     }
-    fmt.Println("Companies with the Mean Views within the %f percentile were:", meanPercentile)
+    fmt.Printf("Companies with mean views within the %f percentile were:\n", meanPercentile)
     for symbol, views := range FindHighestMeans(means, meanPercentile) {
         fmt.Println(stringit.Format("\t{}:{}", symbol, views))      
     }
