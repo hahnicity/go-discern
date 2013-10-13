@@ -32,7 +32,7 @@ func Analyze(ar []*WikiResponse, conf *config.Config) {
 func analyzePercentiles(ar []*WikiResponse, viewPercentile float64) {
     for _, resp := range ar {
         dates := FindRecentDates(resp, viewPercentile)
-        if len(*dates) == 0 {
+        if len(dates) == 0 {
             return
         }
         fmt.Println(
@@ -42,8 +42,8 @@ func analyzePercentiles(ar []*WikiResponse, viewPercentile float64) {
                 viewPercentile,
             ),
         )
-        for _, date := range *dates {
-            fmt.Println(stringit.Format("\t{}:{}", date, resp.Yearly[date]))    
+        for date, views := range dates {
+            fmt.Println(stringit.Format("\t{}:{}", date, views))    
         }
     }
 }
