@@ -21,3 +21,8 @@ _cgo_export.*
 _testmain.go
 
 *.exe
+
+# Stupid files
+*.swo
+*.swp
+*.test
