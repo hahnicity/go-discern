@@ -18,6 +18,7 @@ type Requester struct {
 
 func NewRequester(closeRequests bool, maxRequests int, meanPercentile, viewPercentile float64, year string) (r *Requester){
     r = new(Requester)    
+    r.activeRequests = 0
     r.closeRequests = closeRequests
     r.maxRequests = maxRequests
     r.meanPercentile = meanPercentile
@@ -28,10 +29,9 @@ func NewRequester(closeRequests bool, maxRequests int, meanPercentile, viewPerce
 }
 
 func (r *Requester) MakeRequests(companies map[string]string) {
-    activeRequests := 0
     c := make(chan *WikiResponse)
     for symbol, page := range companies {
-        activeRequests++
+        r.activeRequests++
         r.Work <- makeWikiRequest(r.year, page, symbol, r.closeRequests, c)
         r.manageActiveProc(c)
     }
