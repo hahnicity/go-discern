@@ -2,51 +2,65 @@ package discern
 
 import (
     "fmt"
-    "github.com/hahnicity/go-discern/config"
     "github.com/hahnicity/go-stringit"
 )
 
+type Requester struct {
+    activeRequests int
+    allResponses   []*WikiResponse
+    closeRequests  bool
+    maxRequests    int
+    meanPercentile float64
+    Work           chan WikiRequest
+    viewPercentile float64
+    year           string
+}
 
-func Requester(conf *config.Config, companies map[string]string, work chan <-WikiRequest) {
+func NewRequester(closeRequests bool, maxRequests int, meanPercentile, viewPercentile float64, year string) (r *Requester){
+    r = new(Requester)    
+    r.closeRequests = closeRequests
+    r.maxRequests = maxRequests
+    r.meanPercentile = meanPercentile
+    r.viewPercentile = viewPercentile
+    r.Work = make(chan WikiRequest)
+    r.year = year
+    return
+}
+
+func (r *Requester) MakeRequests(companies map[string]string) {
     activeRequests := 0
     c := make(chan *WikiResponse)
-    ar :=  make([]*WikiResponse, 0)
     for symbol, page := range companies {
         activeRequests++
-        req := makeWikiRequest(conf.Year, page, symbol, conf.CloseReq, c)
-        work <- req
-        ar = manageActiveProc(&activeRequests, conf.Processes, ar, c)
+        r.Work <- makeWikiRequest(r.year, page, symbol, r.closeRequests, c)
+        r.manageActiveProc(c)
     }
     // Wait for all requests to finish
-    for len(ar) < len(companies) {
+    for len(r.allResponses) < len(companies) {
         resp := <- c
-        ar = append(ar, resp)
+        r.allResponses = append(r.allResponses, resp)
     }
-    Analyze(ar, conf)
+    r.Analyze()
 }
 
 // Throttle number of active requests
 // statsgrok.se is the problem here
-func manageActiveProc(activeRequests *int, 
-                      maxRequests int, 
-                      ar []*WikiResponse, 
-                      c chan *WikiResponse) []*WikiResponse {
-    if *activeRequests == maxRequests {
+func (r *Requester) manageActiveProc(c chan *WikiResponse) {
+    if r.activeRequests == r.maxRequests {
         resp := <- c
-        ar = append(ar, resp)
+        r.allResponses = append(r.allResponses, resp)
     }
-    *(activeRequests)--
-    return ar
+    r.activeRequests--
 }
 
-func Analyze(ar []*WikiResponse, conf *config.Config) {
-    analyzeMeans(ar, conf.MeanPercentile)
-    analyzePercentiles(ar, conf.ViewPercentile)
+func (r *Requester) Analyze() {
+    r.analyzeMeans()
+    r.analyzePercentiles()
 }
 
-func analyzePercentiles(ar []*WikiResponse, viewPercentile float64) {
-    for _, resp := range ar {
-        dates := FindRecentDates(resp, viewPercentile)
+func (r *Requester) analyzePercentiles() {
+    for _, resp := range r.allResponses {
+        dates := FindRecentDates(resp, r.viewPercentile)
         if len(dates) == 0 {
             return
         }
@@ -54,7 +68,7 @@ func analyzePercentiles(ar []*WikiResponse, viewPercentile float64) {
             stringit.Format(
                 "Analyzed {} and found following dates within {} percentile", 
                 resp.Symbol, 
-                viewPercentile,
+                r.viewPercentile,
             ),
         )
         for date, views := range dates {
@@ -63,13 +77,13 @@ func analyzePercentiles(ar []*WikiResponse, viewPercentile float64) {
     }
 }
 
-func analyzeMeans(ar []*WikiResponse, meanPercentile float64) {
+func (r *Requester) analyzeMeans() {
     means := make(map[string]int)
-    for _, resp := range ar {
+    for _, resp := range r.allResponses {
         means[resp.Symbol] = FindMeanViews(resp)
     }
-    fmt.Printf("Companies with mean views within the %f percentile were:\n", meanPercentile)
-    for symbol, views := range FindHighestMeans(means, meanPercentile) {
+    fmt.Printf("Companies with mean views within the %f percentile were:\n", r.meanPercentile)
+    for symbol, views := range FindHighestMeans(means, r.meanPercentile) {
         fmt.Println(stringit.Format("\t{}:{}", symbol, views))      
     }
 }
