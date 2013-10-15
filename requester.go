@@ -2,6 +2,7 @@ package discern
 
 import (
     "fmt"
+    "github.com/hahnicity/go-discern/config"
     "github.com/hahnicity/go-stringit"
 )
 
@@ -93,15 +94,28 @@ func (r *Requester) manageActiveProc(c chan *WikiResponse) {
 // Analyze all responses received from wikipedia
 func (r *Requester) Analyze() {
     if r.analyzeMeans { r.means() }
-    r.percentiles()
+    tweetsFor := r.percentiles()
+    if r.analyzeTweets { r.tweets(tweetsFor) }
 }
 
-func (r *Requester) percentiles() {
+func (r *Requester) means() {
+    means := make(map[string]int)
+    for _, resp := range r.allResponses {
+        means[resp.Symbol] = FindMeanViews(resp)
+    }
+    fmt.Printf("Companies with mean views within the %f percentile were:\n", r.meanPercentile)
+    for symbol, views := range FindHighestMeans(means, r.meanPercentile) {
+        fmt.Println(stringit.Format("\t{}:{}", symbol, views))      
+    }
+}
+
+func (r *Requester) percentiles() (tweetsFor []string) {
     for _, resp := range r.allResponses {
         dates := r.viewFunc(resp, r.viewPercentile)
         if len(dates) == 0 {
             return
         }
+        tweetsFor = append(tweetsFor, resp.Symbol)
         fmt.Println(
             stringit.Format(
                 "Analyzed {} and found following dates within {} percentile", 
@@ -113,15 +127,13 @@ func (r *Requester) percentiles() {
             fmt.Println(stringit.Format("\t{}:{}", date, views))    
         }
     }
+    return 
 }
 
-func (r *Requester) means() {
-    means := make(map[string]int)
-    for _, resp := range r.allResponses {
-        means[resp.Symbol] = FindMeanViews(resp)
-    }
-    fmt.Printf("Companies with mean views within the %f percentile were:\n", r.meanPercentile)
-    for symbol, views := range FindHighestMeans(means, r.meanPercentile) {
-        fmt.Println(stringit.Format("\t{}:{}", symbol, views))      
+func (r *Requester) tweets(tweetsFor []string) {
+    token := GetToken(config.TwitterKey, config.TwitterSecret)
+    for _, symbol := range tweetsFor {
+        tr := NewTwitterRequest(symbol, token)
+        tr.FindTweets()
     }
 }
