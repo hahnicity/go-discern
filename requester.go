@@ -33,6 +33,9 @@ type Requester struct {
     // The percentile at which a date with number of views above that should be shown
     viewPercentile float64
 
+    // The function we should use to analyze dates.
+    viewFunc func(*WikiResponse, float64) map[string]int
+
     // The year to analyze requests
     year           string
 }
@@ -43,6 +46,7 @@ func NewRequester(analyzeMeans bool,
                   closeRequests bool, 
                   maxRequests int, 
                   meanPercentile float64, 
+                  viewFunc func(*WikiResponse, float64) map[string]int,
                   viewPercentile float64, 
                   year string) (r *Requester){
     r = new(Requester)    
@@ -52,6 +56,7 @@ func NewRequester(analyzeMeans bool,
     r.closeRequests = closeRequests
     r.maxRequests = maxRequests
     r.meanPercentile = meanPercentile
+    r.viewFunc = viewFunc
     r.viewPercentile = viewPercentile
     r.Work = make(chan WikiRequest)
     r.year = year
@@ -93,7 +98,7 @@ func (r *Requester) Analyze() {
 
 func (r *Requester) percentiles() {
     for _, resp := range r.allResponses {
-        dates := FindRecentDates(resp, r.viewPercentile)
+        dates := r.viewFunc(resp, r.viewPercentile)
         if len(dates) == 0 {
             return
         }

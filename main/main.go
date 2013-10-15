@@ -12,6 +12,8 @@ var (
     closeRequests  bool
     maxRequests    int
     meanPercentile float64
+    viewFunc       func(*discern.WikiResponse, float64) map[string]int
+    viewFuncString string
     viewPercentile float64
     workers        int
     year           string
@@ -36,6 +38,13 @@ func parseArgs() {
         "year",
         "2013",
         "The year we wish to look for stats in",
+    )
+    flag.StringVar(
+        &viewFuncString,
+        "viewFunc",
+        "FindRecentDates",
+        "The function we should use to find dates with above average activity" +
+        " choices: [FindRecentDates, FindDates]",
     )
     flag.Float64Var(
         &viewPercentile,
@@ -68,10 +77,21 @@ func parseArgs() {
         "Analyze tweets of companies with recent news activity",
     )
     flag.Parse()
+    validateParsing()
+}
+
+func validateParsing() {
     if viewPercentile >= 1.0 || meanPercentile >= 1.0 {
         panic("Your percentile input must be less than 1")
     }
-}
+    if viewFuncString == "FindRecentDates" {
+        viewFunc = discern.FindRecentDates
+    } else if viewFuncString == "FindDates" {
+        viewFunc = discern.FindDates
+    } else {
+        panic("You must enter a valid view function. choices [FindDates, FindRecentDates]")    
+    }
+}   
 
 func main() {
     parseArgs()
@@ -81,6 +101,7 @@ func main() {
         closeRequests, 
         maxRequests, 
         meanPercentile, 
+        viewFunc,
         viewPercentile, 
         year,
     )
