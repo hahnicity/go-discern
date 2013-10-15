@@ -7,6 +7,8 @@ import (
 )
 
 var (
+    analyzeMeans   bool
+    analyzeTweets  bool
     closeRequests  bool
     maxRequests    int
     meanPercentile float64
@@ -41,6 +43,18 @@ func parseArgs() {
         .99,
         "The page view percentile we wish to look for. Must be less than 1",
     )
+    flag.BoolVar(
+        &closeRequests,
+        "closeRequests",
+        false,
+        "Set to true if you want to close wiki requests after they have been made",
+    )
+    flag.BoolVar(
+        &analyzeMeans,
+        "analyzeMeans",
+        false,
+        "Analyze which companies have the highest means of all the companies surveyed",
+    )
     flag.Float64Var(
         &meanPercentile,
         "meanp",
@@ -48,10 +62,10 @@ func parseArgs() {
         "The mean page view percentile we wish to look for",
     )
     flag.BoolVar(
-        &closeRequests,
-        "closeRequests",
-        false,
-        "Set to true if you want to close wiki requests after they have been made",
+        &analyzeTweets,
+        "analyzeTweets",
+        true,
+        "Analyze tweets of companies with recent news activity",
     )
     flag.Parse()
     if viewPercentile >= 1.0 || meanPercentile >= 1.0 {
@@ -61,7 +75,15 @@ func parseArgs() {
 
 func main() {
     parseArgs()
-    r := discern.NewRequester(closeRequests, maxRequests, meanPercentile, viewPercentile, year)
+    r := discern.NewRequester(
+        analyzeMeans, 
+        analyzeTweets, 
+        closeRequests, 
+        maxRequests, 
+        meanPercentile, 
+        viewPercentile, 
+        year,
+    )
     go discern.MakeBalancer(workers).Balance(r.Work)
     r.MakeRequests(data.SP500)
 }
