@@ -6,6 +6,7 @@ import (
     "github.com/hahnicity/go-discern/data"
 )
 
+// XXX Change *Percentile to Quantile
 var (
     analyzeMeans   bool
     analyzeTweets  bool
@@ -48,7 +49,7 @@ func parseArgs() {
     )
     flag.Float64Var(
         &viewPercentile,
-        "viewp",
+        "viewQuant",
         .99,
         "The page view percentile we wish to look for. Must be less than 1",
     )
@@ -66,7 +67,7 @@ func parseArgs() {
     )
     flag.Float64Var(
         &meanPercentile,
-        "meanp",
+        "meanQuant",
         .75,
         "The mean page view percentile we wish to look for",
     )

@@ -22,7 +22,10 @@ _testmain.go
 
 *.exe
 
-# Stupid files
+# Annoying files
 *.swo
 *.swp
 *.test
+
+# We don't want to show this
+config/twitter.go
