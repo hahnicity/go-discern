@@ -31,12 +31,12 @@ Example:
 
 Create a new file name `twitterconfig.go` in the `config` package
 
-        package config
+    package config
         
-        var (
-            TwitterKey    string = "hsfkhklj"
-            TwitterSecret string = "aklhjfkhafkjh"
-        )
+    var (
+        TwitterKey    string = "hsfkhklj"
+        TwitterSecret string = "aklhjfkhafkjh"
+    )
         
 Unfortunately the ability to specify the key and secret is currently not supported 
 over the command line
@@ -44,19 +44,19 @@ over the command line
 ## Usage
 All usage of this package can be done through the command line.
 
-        go run main/main.go
+    go run main/main.go
 
 Of course we have the option of specifying different command line parameters as well
 
-        -max => The number of concurrent requests we can make to wikipedia
-        -workers => The number of workers we want to create in our heap
-        -year => The year we want to analyze stats for
-        -viewFunc => (FindDates or FindRecentDates). FindDates will return all dates with
-                     higher than normal activity. FindRecentDates will find dates within
-                     past 5 days
-        -viewQuant => All dates with views inside this quantile will be shown
-        -closeRequests => Close all requests made to wikipedia immediately after getting a
-                          response
-        -analyzeMeans => Show companies with the mean views within a quantile
-        -meanQuant => The quantile to display mean views for
-        -analyzeTweets => Set to false if you do not want to analyze tweets
+    -max => The number of concurrent requests we can make to wikipedia
+    -workers => The number of workers we want to create in our heap
+    -year => The year we want to analyze stats for
+    -viewFunc => (FindDates or FindRecentDates). FindDates will return all dates with
+                 higher than normal activity. FindRecentDates will find dates within
+                 past 5 days
+    -viewQuant => All dates with views inside this quantile will be shown
+    -closeRequests => Close all requests made to wikipedia immediately after getting a
+                      response
+    -analyzeMeans => Show companies with the mean views within a quantile
+    -meanQuant => The quantile to display mean views for
+    -analyzeTweets => Set to false if you do not want to analyze tweets
