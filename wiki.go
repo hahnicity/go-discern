@@ -19,7 +19,7 @@ type MonthlyStats struct {
 
 type WikiRequest struct {
 	Client *http.Client
-    	Close  bool
+	Close  bool
 	Resp   chan *WikiResponse
 	Symbol string
 	Page   string
