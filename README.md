@@ -9,7 +9,7 @@ Install the following 4 packages. I need to add in a dependency manager
 
     go get github.com/hahnicity/go-stringit
     go get github.com/hahnicity/tweetlib
-    go get github.com/srd/statistics
+    go get github.com/grd/statistics
     go get github.com/go-discern 
 
 ## Function
